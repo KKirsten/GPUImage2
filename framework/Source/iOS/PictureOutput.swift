@@ -11,6 +11,7 @@ public class PictureOutput: ImageConsumer {
     public var encodedImageFormat:PictureFileFormat = .png
     public var imageAvailableCallback:((UIImage) -> ())?
     public var onlyCaptureNextFrame:Bool = true
+    public var orientation:ImageOrientation = .portrait
     public var keepImageAroundForSynchronousCapture:Bool = false
     var storedFramebuffer:Framebuffer?
     
@@ -66,7 +67,7 @@ public class PictureOutput: ImageConsumer {
             let cgImageFromBytes = cgImageFromFramebuffer(framebuffer)
             
             // TODO: Let people specify orientations
-            let image = UIImage(cgImage:cgImageFromBytes, scale:1.0, orientation:.up)
+            let image = UIImage(cgImage:cgImageFromBytes, scale:1.0, orientation: UIImageOrientation(forOrientation: self.orientation))
             
             imageCallback(image)
             
@@ -77,7 +78,7 @@ public class PictureOutput: ImageConsumer {
         
         if let imageCallback = encodedImageAvailableCallback {
             let cgImageFromBytes = cgImageFromFramebuffer(framebuffer)
-            let image = UIImage(cgImage:cgImageFromBytes, scale:1.0, orientation:.up)
+            let image = UIImage(cgImage:cgImageFromBytes, scale:1.0, orientation: UIImageOrientation(forOrientation: self.orientation))
             let imageData:Data
             switch encodedImageFormat {
                 case .png: imageData = UIImagePNGRepresentation(image)! // TODO: Better error handling here
@@ -89,6 +90,19 @@ public class PictureOutput: ImageConsumer {
             if onlyCaptureNextFrame {
                 encodedImageAvailableCallback = nil
             }
+        }
+    }
+
+    private func UIImageOrientation(forOrientation orientation: ImageOrientation) -> UIImageOrientation {
+        switch orientation {
+        case .landscapeLeft:
+            return .right
+        case .landscapeRight:
+            return .left
+        case .portrait:
+            return .up
+        case .portraitUpsideDown:
+            return .down
         }
     }
     

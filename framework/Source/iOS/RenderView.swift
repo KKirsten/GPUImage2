@@ -13,6 +13,7 @@ public class RenderView:UIView, ImageConsumer {
     var displayFramebuffer:GLuint?
     var displayRenderbuffer:GLuint?
     var backingSize = GLSize(width:0, height:0)
+    private var boundsSizeAtFrameBufferEpoch: CGSize = .zero
     
     private lazy var displayShader:ShaderProgram = {
         return sharedImageProcessingContext.passthroughShader
@@ -76,6 +77,23 @@ public class RenderView:UIView, ImageConsumer {
         let status = glCheckFramebufferStatus(GLenum(GL_FRAMEBUFFER))
         if (status != GLenum(GL_FRAMEBUFFER_COMPLETE)) {
             fatalError("Display framebuffer creation failed with error: \(FramebufferCreationError(errorCode:status))")
+        }
+
+        DispatchQueue.main.async {
+            self.boundsSizeAtFrameBufferEpoch = self.bounds.size
+        }
+    }
+
+    public override func layoutSubviews() {
+        super.layoutSubviews()
+
+        guard bounds.size != boundsSizeAtFrameBufferEpoch && boundsSizeAtFrameBufferEpoch != .zero else {
+            return
+        }
+
+        sharedImageProcessingContext.runOperationSynchronously {
+            destroyDisplayFramebuffer()
+            createDisplayFramebuffer()
         }
     }
     
